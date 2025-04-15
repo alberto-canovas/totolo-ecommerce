@@ -1,29 +1,46 @@
 package com.ecommerce.totolo.model;
 
+import jakarta.persistence.*;
+
+import java.util.List;
+
+@Entity
+@Table(name = "users")
 public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+    //id autoincrementable
     private String name;
+    private String lastname;
     private String username;
     private String email;
     private String address;
     private String phone_number;
-    private String tipe;
+    private String type;
     private String password;
 
+    //relacionamos el atributo user de la clase Product con la lista de productos.
+    @OneToMany(mappedBy = "user")
+    private List<Product> productList;
+
+    @OneToMany(mappedBy = "user")
+    private List<Order> orderList;
 
     public User(){
 
     }
 
-    public User(Integer id, String name, String username, String email, String address, String phone_number, String tipe, String password) {
+    public User(Integer id, String lastname,String name, String username, String email, String address, String phone_number, String tipe, String password) {
         this.id = id;
         this.name = name;
         this.username = username;
         this.email = email;
         this.address = address;
         this.phone_number = phone_number;
-        this.tipe = tipe;
+        this.type = tipe;
         this.password = password;
+        this.lastname = lastname;
     }
 
     public Integer getId() {
@@ -74,12 +91,12 @@ public class User {
         this.phone_number = phone_number;
     }
 
-    public String getTipe() {
-        return tipe;
+    public String getType() {
+        return type;
     }
 
-    public void setTipe(String tipe) {
-        this.tipe = tipe;
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getPassword() {
@@ -90,16 +107,41 @@ public class User {
         this.password = password;
     }
 
+    public String getLastname() {
+        return lastname;
+    }
+
+    public void setLastname(String lastname) {
+        this.lastname = lastname;
+    }
+
+    public List<Product> getProductList() {
+        return productList;
+    }
+
+    public void setProductList(List<Product> productList) {
+        this.productList = productList;
+    }
+
+    public List<Order> getOrderList() {
+        return orderList;
+    }
+
+    public void setOrderList(List<Order> orderList) {
+        this.orderList = orderList;
+    }
+
     @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
+                ", lastname='" + lastname + '\'' +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", address='" + address + '\'' +
                 ", phone_number='" + phone_number + '\'' +
-                ", tipe='" + tipe + '\'' +
+                ", type='" + type + '\'' +
                 ", password='" + password + '\'' +
                 '}';
     }

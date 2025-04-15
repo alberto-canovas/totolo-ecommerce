@@ -1,6 +1,13 @@
 package com.ecommerce.totolo.model;
 
+import jakarta.persistence.*;
+
+//En @table ponemos el nombre que va a tener en la base de datos esta tabla
+@Entity
+@Table(name = "products")
 public class Product {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String name;
     private String description;
@@ -8,16 +15,21 @@ public class Product {
     private double price;
     private int stock;
 
+    @ManyToOne
+    private User user;
+
+
     public Product() {
     }
 
-    public Product(Integer id, String name, String description, String image, double price, int stock) {
+    public Product(Integer id, String name, String description, String image, double price, int stock, User user) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.image = image;
         this.price = price;
         this.stock = stock;
+        this.user = user;
     }
 
     public Integer getId() {
@@ -78,5 +90,13 @@ public class Product {
                 ", price=" + price +
                 ", stock=" + stock +
                 '}';
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }
