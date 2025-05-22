@@ -1,5 +1,6 @@
 package com.ecommerce.totolo.model;
 
+import com.ecommerce.totolo.Enum.TypeEnum;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -20,7 +21,7 @@ public class User {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    private String type;
+    private TypeEnum type;
 
     //un usuario tiene muchos pedidos
     @OneToMany(mappedBy = "user")
@@ -34,17 +35,22 @@ public class User {
 
     }
 
-    public User(Integer id, String lastname,String name, String username, String email, String address, String phone_number, String tipe, String password) {
+
+    public User(Integer id, String name, String lastname, String username, String email, String address, String phone_number, String password, TypeEnum type, List<Order> orderList, ShoppingCart shoppingCart) {
         this.id = id;
         this.name = name;
+        this.lastname = lastname;
         this.username = username;
         this.email = email;
         this.address = address;
         this.phone_number = phone_number;
-        this.type = tipe;
         this.password = password;
-        this.lastname = lastname;
+        this.type = type;
+        this.orderList = orderList;
+        this.shoppingCart = shoppingCart;
     }
+
+
 
     public Integer getId() {
         return id;
@@ -94,11 +100,11 @@ public class User {
         this.phone_number = phone_number;
     }
 
-    public String getType() {
+    public TypeEnum getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(TypeEnum type) {
         this.type = type;
     }
 

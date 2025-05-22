@@ -3,31 +3,32 @@ package com.ecommerce.totolo.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "order_details")
-public class OrderDetail {
+@Table(name = "order_items")
+public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    private String name;
-    private double quantity;
-    private double price;
-    private double total;
 
-    @OneToOne
-    private Order order;
-
+    //Significa que muchos OrderItem pueden estar asociados al mismo Product.
     @ManyToOne
     private Product product;
+    private Integer quantity;
+    private double price;
 
-    public OrderDetail() {
+    //Significa que muchos orderItem pertenecen al mismo order.
+    @ManyToOne
+    private Order order;
+
+
+    public OrderItem() {
     }
 
-    public OrderDetail(Integer id, String name, double quantity, double price, double total) {
+    public OrderItem(Integer id, Product product, Integer quantity, double price, Order order) {
         this.id = id;
-        this.name = name;
+        this.product = product;
         this.quantity = quantity;
         this.price = price;
-        this.total = total;
+        this.order = order;
     }
 
     public Integer getId() {
@@ -38,19 +39,13 @@ public class OrderDetail {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
-    }
 
-    public void setName(String name) {
-        this.name = name;
-    }
 
     public double getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(double quantity) {
+    public void setQuantity(Integer quantity) {
         this.quantity = quantity;
     }
 
@@ -62,13 +57,6 @@ public class OrderDetail {
         this.price = price;
     }
 
-    public double getTotal() {
-        return total;
-    }
-
-    public void setTotal(double total) {
-        this.total = total;
-    }
 
     public Order getOrder() {
         return order;
@@ -90,10 +78,8 @@ public class OrderDetail {
     public String toString() {
         return "OrderDetail{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
                 ", quantity=" + quantity +
                 ", price=" + price +
-                ", total=" + total +
                 '}';
     }
 }

@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name="shopping_cart")
+@Table(name="shoppingCart")
 public class ShoppingCart {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +19,7 @@ public class ShoppingCart {
 
     //un ShoppingCart puede tener muchos items, cada ShoppingCartItem pertenece a un solo ShoppingCart
     //Cascade se utiliza por si se borra el ShoppingCart se borran automáticamente todos sus ShoppingCartItem
-    @OneToMany(mappedBy = "shopping_cart", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "shoppingCart", cascade = CascadeType.ALL)
     private List<ShoppingCartItem> items;
 
 
