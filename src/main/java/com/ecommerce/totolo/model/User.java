@@ -17,15 +17,18 @@ public class User {
     private String email;
     private String address;
     private String phone_number;
-    private String type;
     private String password;
 
-    //relacionamos el atributo user de la clase Product con la lista de productos.
-    @OneToMany(mappedBy = "user")
-    private List<Product> productList;
+    @Enumerated(EnumType.STRING)
+    private String type;
 
+    //un usuario tiene muchos pedidos
     @OneToMany(mappedBy = "user")
     private List<Order> orderList;
+
+    //un carrito pertenece a un Usuario
+    @OneToOne(mappedBy = "user")
+    private ShoppingCart shoppingCart;
 
     public User(){
 
@@ -115,12 +118,12 @@ public class User {
         this.lastname = lastname;
     }
 
-    public List<Product> getProductList() {
-        return productList;
+    public ShoppingCart getShoppingCart() {
+        return shoppingCart;
     }
 
-    public void setProductList(List<Product> productList) {
-        this.productList = productList;
+    public void setShoppingCart(ShoppingCart shoppingCart) {
+        this.shoppingCart = shoppingCart;
     }
 
     public List<Order> getOrderList() {
