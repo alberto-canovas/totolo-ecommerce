@@ -24,7 +24,7 @@ public class PaymentController {
     private ShoppingCartService shoppingCartService;
 
     static {
-        Stripe.apiKey = "sk_test_51RZ7PHINVtuUnxBwe8f4vLxItqoATRt1VBbIKgQwYBYv97OFXRp1HmSJxdE6ZxMQpC9dd4hElvsLpKR1uUHqysrh00cydebjDp"; // ⚠️ Reemplaza con tu clave secreta real
+        Stripe.apiKey = ""; // ⚠️ Reemplaza con tu clave secreta real
     }
 
     @GetMapping("/checkout/{userId}")
