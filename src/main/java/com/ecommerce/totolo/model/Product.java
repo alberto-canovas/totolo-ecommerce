@@ -2,6 +2,11 @@ package com.ecommerce.totolo.model;
 
 import jakarta.persistence.*;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 //En @table ponemos el nombre que va a tener en la base de datos esta tabla
 @Entity
 @Table(name = "products")
@@ -16,7 +21,6 @@ public class Product {
     private int stock;
 
 
-
     public Product() {
     }
 
@@ -29,53 +33,6 @@ public class Product {
         this.stock = stock;
     }
 
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getImage() {
-        return image;
-    }
-
-    public void setImage(String image) {
-        this.image = image;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-
-    public void setPrice(double price) {
-        this.price = price;
-    }
-
-    public int getStock() {
-        return stock;
-    }
-
-    public void setStock(int stock) {
-        this.stock = stock;
-    }
 
     @Override
     public String toString() {

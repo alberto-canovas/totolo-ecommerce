@@ -1,11 +1,15 @@
 package com.ecommerce.totolo.controller;
 
+import com.ecommerce.totolo.Enum.TypeEnum;
 import com.ecommerce.totolo.model.User;
 import com.ecommerce.totolo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.ecommerce.totolo.dto.UserLoginDto;
+import com.ecommerce.totolo.dto.UserRegisterDto;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +45,9 @@ public class UserController {
     @CrossOrigin
     public ResponseEntity<String> addNewUser(@RequestBody User user){
         try{
+            //por defecto el usuario es de tipo cliente
+            user.setType(TypeEnum.CLIENT);
+
             userService.addNewUser(user);
             String message = "The user: "+user.getName()+" has been added successfully.";
             return new ResponseEntity<>(message,HttpStatus.OK);
@@ -51,22 +58,70 @@ public class UserController {
 
     @PutMapping("/user/{id}")
     @CrossOrigin
-    public ResponseEntity<String> updateUserById(@PathVariable("id") Integer id, @RequestBody User user ){
-        Optional<User> optionalUser = userService.getUserById(id);
-        if(optionalUser.isPresent()){
-            User existentUser = optionalUser.get();
-            existentUser.setName(user.getName());
-            existentUser.setLastname(user.getLastname());
-            existentUser.setAddress(user.getAddress());
-            existentUser.setEmail(user.getEmail());
-            existentUser.setPhone_number(user.getPhone_number());
-            existentUser.setUsername(user.getUsername());
-            userService.addNewUser(existentUser);
-            return new ResponseEntity<>("The user is updated successfully",HttpStatus.OK);
-        }else {
-            return new ResponseEntity<>("The user is not found",HttpStatus.NOT_FOUND);
+    public ResponseEntity<String> updateUserById(@PathVariable("id") Integer id, @RequestBody User user, @RequestParam Integer requesterId) {
+        Optional<User> optionalTargetUser = userService.getUserById(id);
+        Optional<User> optionalRequester = userService.getUserById(requesterId);
+
+        if (optionalTargetUser.isEmpty() || optionalRequester.isEmpty()) {
+            return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
         }
+
+        User targetUser = optionalTargetUser.get();       // El usuario que se quiere modificar
+        User requester = optionalRequester.get();         // El que hace la petición
+
+        // Si no es admin, solo puede editarse a sí mismo
+        if (!requester.getType().equals(TypeEnum.ADMIN) && !requester.getId().equals(targetUser.getId())) {
+            return new ResponseEntity<>("No tienes permisos para modificar a otros usuarios", HttpStatus.FORBIDDEN);
+        }
+
+        // Solo el propio usuario puede modificar su contraseña
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            if (requester.getId().equals(targetUser.getId())) {
+                targetUser.setPassword(user.getPassword());
+            } else {
+                return new ResponseEntity<>("Solo puedes modificar tu propia contraseña", HttpStatus.FORBIDDEN);
+            }
+        }
+
+        // Validamos que el username no esté repetido por otro usuario
+        if (user.getUsername() != null && !user.getUsername().equals(targetUser.getUsername())) {
+            Optional<User> userWithSameUsername = userService.findByUsername(user.getUsername());
+            if (userWithSameUsername.isPresent() && !userWithSameUsername.get().getId().equals(targetUser.getId())) {
+                return new ResponseEntity<>("El nombre de usuario ya está en uso", HttpStatus.CONFLICT);
+            }
+            targetUser.setUsername(user.getUsername());
+        }
+
+        // Validamos que el email no esté repetido por otro usuario
+        if (user.getEmail() != null && !user.getEmail().equals(targetUser.getEmail())) {
+            Optional<User> userWithSameEmail = userService.findByEmail(user.getEmail());
+            if (userWithSameEmail.isPresent() && !userWithSameEmail.get().getId().equals(targetUser.getId())) {
+                return new ResponseEntity<>("El email ya está en uso", HttpStatus.CONFLICT);
+            }
+            targetUser.setEmail(user.getEmail());
+        }
+
+        // Solo un ADMIN puede cambiar el type
+        if (user.getType() != null) {
+            if (requester.getType().equals(TypeEnum.ADMIN)) {
+                targetUser.setType(user.getType());
+            } else {
+                return new ResponseEntity<>("Solo un ADMIN puede cambiar el tipo de usuario", HttpStatus.FORBIDDEN);
+            }
+        }
+
+        // Campos editables por cualquiera sobre sí mismo o admin sobre cualquiera
+        targetUser.setName(user.getName());
+        targetUser.setLastname(user.getLastname());
+        targetUser.setAddress(user.getAddress());
+        targetUser.setEmail(user.getEmail());
+        targetUser.setPhone_number(user.getPhone_number());
+        targetUser.setUsername(user.getUsername());
+
+        userService.addNewUser(targetUser);
+        return new ResponseEntity<>("Usuario actualizado correctamente", HttpStatus.OK);
     }
+
 
     @GetMapping("/user/{id}")
     @CrossOrigin
@@ -76,6 +131,53 @@ public class UserController {
     }
 
 
+
+    @PostMapping("/register")
+    @CrossOrigin
+    public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegisterDto userDto) {
+        if (userService.usernameExists(userDto.getUsername())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("El nombre de usuario ya está en uso.");
+        }
+
+        if (userService.emailExists(userDto.getEmail())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("El email ya está en uso.");
+        }
+
+        User user = new User();
+        user.setName(userDto.getName());
+        user.setLastname(userDto.getLastname());
+        user.setUsername(userDto.getUsername());
+        user.setEmail(userDto.getEmail());
+        user.setAddress(userDto.getAddress());
+        user.setPhone_number(userDto.getPhone_number());
+        user.setPassword(userDto.getPassword());
+        user.setType(TypeEnum.CLIENT);
+
+        userService.addNewUser(user);
+        return ResponseEntity.ok("Usuario registrado correctamente.");
+    }
+
+    @PostMapping("/login")
+    @CrossOrigin
+    public ResponseEntity<?> login(@Valid @RequestBody UserLoginDto loginDto) {
+        Optional<User> userOptional = userService.findByUsername(loginDto.getUsername());
+
+        // Si no encuentra por username, intenta por email
+        if (userOptional.isEmpty()) {
+            userOptional = userService.findByEmail(loginDto.getUsername());
+        }
+
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
+        }
+
+        User user = userOptional.get();
+        if (!user.getPassword().equals(loginDto.getPassword())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta.");
+        }
+
+        return ResponseEntity.ok(user);
+    }
 
 
 

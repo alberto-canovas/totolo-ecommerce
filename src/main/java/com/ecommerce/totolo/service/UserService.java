@@ -30,4 +30,21 @@ public class UserService {
     public void deleteUserById(Integer id){
         userDao.deleteById(id);
     }
+
+    public Optional<User> findByUsername(String username) {
+        return userDao.findByUsername(username);
+    }
+
+    public boolean usernameExists(String username) {
+        return userDao.existsByUsername(username);
+    }
+
+    public boolean emailExists(String email) {
+        return userDao.existsByEmail(email);
+    }
+
+    public Optional<User> findByEmail(String email) {
+        return userDao.findByEmail(email);
+    }
+
 }
