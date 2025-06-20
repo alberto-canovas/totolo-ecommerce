@@ -1,64 +1,64 @@
 package com.ecommerce.totolo.controller;
 
 import com.ecommerce.totolo.Enum.TypeEnum;
+import com.ecommerce.totolo.dto.UserLoginDto;
+import com.ecommerce.totolo.dto.UserRegisterDto;
 import com.ecommerce.totolo.model.User;
 import com.ecommerce.totolo.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.ecommerce.totolo.dto.UserLoginDto;
-import com.ecommerce.totolo.dto.UserRegisterDto;
-import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/totolo/v1")
+@CrossOrigin
 public class UserController {
+
     @Autowired
-    UserService userService;
+    private UserService userService;
 
     @GetMapping("/users")
-    @CrossOrigin
-    public ResponseEntity<List<User>> getAllUsers(){
+    public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.getAllUsers();
         return new ResponseEntity<>(users, HttpStatus.OK);
     }
 
     @DeleteMapping("/user/{id}")
-    @CrossOrigin
-    public ResponseEntity<String> deleteUserById(@PathVariable("id") Integer id){
+    public ResponseEntity<String> deleteUserById(@PathVariable("id") Integer id) {
         Optional<User> optionalUser = userService.getUserById(id);
-        if(optionalUser.isPresent()){
-            User user = optionalUser.get();
-            userService.deleteUserById(id);
-            String message = "The user: "+user.getName()+ " "+user.getLastname()+" has been deleted successfully.";
-            return new ResponseEntity<>(message,HttpStatus.OK);
-        }else{
-            return new ResponseEntity<>("The user is not found",HttpStatus.NOT_FOUND);
+        if (optionalUser.isPresent()) {
+            try {
+                userService.deleteUserById(id);
+                String message = "The user: " + optionalUser.get().getName() + " " + optionalUser.get().getLastname() + " has been deleted successfully.";
+                return new ResponseEntity<>(message, HttpStatus.OK);
+            } catch (Exception e) {
+                return new ResponseEntity<>("Error deleting user: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        } else {
+            return new ResponseEntity<>("The user is not found", HttpStatus.NOT_FOUND);
         }
     }
 
     @PostMapping("/user")
-    @CrossOrigin
-    public ResponseEntity<String> addNewUser(@RequestBody User user){
-        try{
-            //por defecto el usuario es de tipo cliente
+    public ResponseEntity<?> addNewUser(@Valid @RequestBody User user) {
+        try {
             user.setType(TypeEnum.CLIENT);
-
-            userService.addNewUser(user);
-            String message = "The user: "+user.getName()+" has been added successfully.";
-            return new ResponseEntity<>(message,HttpStatus.OK);
-        }catch(Exception ex){
-            return  new ResponseEntity<>("Error the user can't be added: "+ ex.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
+            User savedUser = userService.addNewUser(user);
+            return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
+        } catch (Exception ex) {
+            return new ResponseEntity<>("Error the user can't be added: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PutMapping("/user/{id}")
-    @CrossOrigin
-    public ResponseEntity<String> updateUserById(@PathVariable("id") Integer id, @RequestBody User user, @RequestParam Integer requesterId) {
+    public ResponseEntity<String> updateUserById(@PathVariable("id") Integer id,
+                                                 @RequestBody User user,
+                                                 @RequestParam Integer requesterId) {
         Optional<User> optionalTargetUser = userService.getUserById(id);
         Optional<User> optionalRequester = userService.getUserById(requesterId);
 
@@ -66,15 +66,15 @@ public class UserController {
             return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
         }
 
-        User targetUser = optionalTargetUser.get();       // El usuario que se quiere modificar
-        User requester = optionalRequester.get();         // El que hace la petición
+        User targetUser = optionalTargetUser.get();
+        User requester = optionalRequester.get();
 
-        // Si no es admin, solo puede editarse a sí mismo
+        // Permisos básicos
         if (!requester.getType().equals(TypeEnum.ADMIN) && !requester.getId().equals(targetUser.getId())) {
             return new ResponseEntity<>("No tienes permisos para modificar a otros usuarios", HttpStatus.FORBIDDEN);
         }
 
-        // Solo el propio usuario puede modificar su contraseña
+        // Contraseña solo para el propio usuario
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
             if (requester.getId().equals(targetUser.getId())) {
                 targetUser.setPassword(user.getPassword());
@@ -83,7 +83,7 @@ public class UserController {
             }
         }
 
-        // Validamos que el username no esté repetido por otro usuario
+        // Validar username y email para no repetir
         if (user.getUsername() != null && !user.getUsername().equals(targetUser.getUsername())) {
             Optional<User> userWithSameUsername = userService.findByUsername(user.getUsername());
             if (userWithSameUsername.isPresent() && !userWithSameUsername.get().getId().equals(targetUser.getId())) {
@@ -92,7 +92,6 @@ public class UserController {
             targetUser.setUsername(user.getUsername());
         }
 
-        // Validamos que el email no esté repetido por otro usuario
         if (user.getEmail() != null && !user.getEmail().equals(targetUser.getEmail())) {
             Optional<User> userWithSameEmail = userService.findByEmail(user.getEmail());
             if (userWithSameEmail.isPresent() && !userWithSameEmail.get().getId().equals(targetUser.getId())) {
@@ -101,7 +100,7 @@ public class UserController {
             targetUser.setEmail(user.getEmail());
         }
 
-        // Solo un ADMIN puede cambiar el type
+        // Solo admin puede cambiar el type
         if (user.getType() != null) {
             if (requester.getType().equals(TypeEnum.ADMIN)) {
                 targetUser.setType(user.getType());
@@ -110,30 +109,23 @@ public class UserController {
             }
         }
 
-        // Campos editables por cualquiera sobre sí mismo o admin sobre cualquiera
-        targetUser.setName(user.getName());
-        targetUser.setLastname(user.getLastname());
-        targetUser.setAddress(user.getAddress());
-        targetUser.setEmail(user.getEmail());
-        targetUser.setPhone_number(user.getPhone_number());
-        targetUser.setUsername(user.getUsername());
+        // Campos editables
+        if (user.getName() != null) targetUser.setName(user.getName());
+        if (user.getLastname() != null) targetUser.setLastname(user.getLastname());
+        if (user.getAddress() != null) targetUser.setAddress(user.getAddress());
+        if (user.getPhone_number() != null) targetUser.setPhone_number(user.getPhone_number());
 
         userService.addNewUser(targetUser);
         return new ResponseEntity<>("Usuario actualizado correctamente", HttpStatus.OK);
     }
 
-
     @GetMapping("/user/{id}")
-    @CrossOrigin
-    public ResponseEntity<User> getUserById(@PathVariable("id")Integer id){
+    public ResponseEntity<User> getUserById(@PathVariable("id") Integer id) {
         Optional<User> optionalUser = userService.getUserById(id);
-        return optionalUser.map(ResponseEntity::ok).orElseGet(()->ResponseEntity.notFound().build());
+        return optionalUser.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-
-
     @PostMapping("/register")
-    @CrossOrigin
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegisterDto userDto) {
         if (userService.usernameExists(userDto.getUsername())) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("El nombre de usuario ya está en uso.");
@@ -157,29 +149,19 @@ public class UserController {
         return ResponseEntity.ok("Usuario registrado correctamente.");
     }
 
+    // Login simple sin Spring Security (solo ejemplo, NO recomendable para producción)
     @PostMapping("/login")
-    @CrossOrigin
     public ResponseEntity<?> login(@Valid @RequestBody UserLoginDto loginDto) {
-        Optional<User> userOptional = userService.findByUsername(loginDto.getUsername());
-
-        // Si no encuentra por username, intenta por email
-        if (userOptional.isEmpty()) {
-            userOptional = userService.findByEmail(loginDto.getUsername());
+        Optional<User> userOpt = userService.findByUsername(loginDto.getUsername());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no encontrado.");
         }
 
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
-        }
-
-        User user = userOptional.get();
+        User user = userOpt.get();
         if (!user.getPassword().equals(loginDto.getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta.");
         }
 
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok("Login exitoso.");
     }
-
-
-
-
 }
