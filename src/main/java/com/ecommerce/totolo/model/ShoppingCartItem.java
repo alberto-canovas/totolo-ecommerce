@@ -1,5 +1,6 @@
 package com.ecommerce.totolo.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 @Entity
@@ -14,6 +15,7 @@ public class ShoppingCartItem {
     private Integer quantity;
 
     @ManyToOne
+    @JsonBackReference
     private ShoppingCart shoppingCart;
 
 

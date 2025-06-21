@@ -1,5 +1,8 @@
 package com.ecommerce.totolo.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -15,11 +18,14 @@ public class ShoppingCart {
     @OneToOne
     //la tabla carrito tendrá una columna user_id que hará referencia a user.id
     @JoinColumn(name = "user_id")
+    @JsonManagedReference // permite la serialización del lado principal
+    @JsonIgnore
     private User user;
 
     //un ShoppingCart puede tener muchos items, cada ShoppingCartItem pertenece a un solo ShoppingCart
     //Cascade se utiliza por si se borra el ShoppingCart se borran automáticamente todos sus ShoppingCartItem
     @OneToMany(mappedBy = "shoppingCart", cascade = CascadeType.ALL)
+    @JsonBackReference
     private List<ShoppingCartItem> items;
 
 

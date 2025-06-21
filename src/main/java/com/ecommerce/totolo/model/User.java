@@ -1,6 +1,8 @@
 package com.ecommerce.totolo.model;
 
 import com.ecommerce.totolo.Enum.TypeEnum;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -30,6 +32,8 @@ public class User {
 
     //un usuario tiene muchos pedidos
     @OneToMany(mappedBy = "user")
+    @JsonBackReference // evita la serialización infinita
+    @JsonIgnore
     private List<Order> orderList;
 
     //un carrito pertenece a un Usuario
