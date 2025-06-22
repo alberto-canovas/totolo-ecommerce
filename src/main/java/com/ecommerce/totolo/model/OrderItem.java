@@ -1,5 +1,6 @@
 package com.ecommerce.totolo.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,6 +22,7 @@ public class OrderItem {
 
     //Significa que muchos orderItem pertenecen al mismo order.
     @ManyToOne
+    @JsonBackReference
     private Order order;
 
 
