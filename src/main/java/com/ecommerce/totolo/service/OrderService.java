@@ -1,8 +1,11 @@
 package com.ecommerce.totolo.service;
 
 import com.ecommerce.totolo.Enum.OrderStatus;
+import com.ecommerce.totolo.dto.CreateOrderRequest;
+import com.ecommerce.totolo.dto.OrderItemRequest;
 import com.ecommerce.totolo.model.*;
 import com.ecommerce.totolo.repository.IOrderDao;
+import com.ecommerce.totolo.repository.IProductDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,8 +16,15 @@ import java.util.Optional;
 
 @Service
 public class OrderService {
+
     @Autowired
-    IOrderDao orderDao;
+    private IOrderDao orderDao;
+
+    @Autowired
+    private IProductDao productDao;
+
+    @Autowired
+    private ShoppingCartService shoppingCartService;
 
 
     public Order addNewOrder(Order order){
@@ -51,10 +61,6 @@ public class OrderService {
 
         return orderDao.save(order);
     }
-
-
-    @Autowired
-    private ShoppingCartService shoppingCartService;
 
     public Order createOrderFromCart(User user, String address) {
         ShoppingCart cart = shoppingCartService.getOrCreateCart(user);
@@ -96,7 +102,49 @@ public class OrderService {
     }
 
 
+    /**
+     * NUEVO MÉTODO: Crea una orden a partir de un payload del frontend.
+     * @param user El usuario autenticado que realiza la orden.
+     * @param orderRequest El DTO que contiene la dirección y los productos.
+     * @return La orden guardada en la base de datos.
+     */
+    public Order createOrderFromPayload(User user, CreateOrderRequest orderRequest) {
+        if (orderRequest.getItems() == null || orderRequest.getItems().isEmpty()) {
+            throw new RuntimeException("La solicitud de pedido no contiene productos.");
+        }
 
+        // 1. Crear el objeto principal de la orden
+        Order order = new Order();
+        order.setUser(user);
+        order.setAddress(orderRequest.getAddress());
+        order.setOrder_date(LocalDateTime.now());
+        order.setStatus(OrderStatus.IN_PROCESS); // O el estado inicial que prefieras
 
+        List<OrderItem> orderItems = new ArrayList<>();
+        double total = 0.0;
 
+        // 2. Procesar cada producto de la solicitud
+        for (OrderItemRequest itemRequest : orderRequest.getItems()) {
+            // Busca el producto en la BBDD para asegurar que existe y obtener el precio real
+            Product product = productDao.findById(itemRequest.getProductId().intValue())
+                    .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + itemRequest.getProductId()));
+
+            // Crea el item de la orden
+            OrderItem orderItem = new OrderItem();
+            orderItem.setProduct(product);
+            orderItem.setQuantity(itemRequest.getQuantity());
+            orderItem.setPrice(product.getPrice()); // Usa el precio de la BBDD, no del cliente
+            orderItem.setOrder(order); // Enlaza el item con la orden principal
+
+            orderItems.add(orderItem);
+            total += product.getPrice() * itemRequest.getQuantity();
+        }
+
+        // 3. Asignar la lista de items y el total a la orden
+        order.setOrderItems(orderItems);
+        order.setTotal(total);
+
+        // 4. Guardar la orden y sus items en la BBDD (gracias a CascadeType.ALL)
+        return orderDao.save(order);
+    }
 }

@@ -1,6 +1,7 @@
 package com.ecommerce.totolo.controller;
 
 import com.ecommerce.totolo.Enum.TypeEnum;
+import com.ecommerce.totolo.dto.CreateOrderRequest;
 import com.ecommerce.totolo.model.Order;
 import com.ecommerce.totolo.model.User;
 import com.ecommerce.totolo.service.OrderService;
@@ -39,7 +40,7 @@ public class OrderController {
     public ResponseEntity<List<Order>> getAllOrders(Principal principal, @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
             User user = null;
-            
+
             // Intentar obtener usuario del Principal (Spring Security)
             if (principal != null) {
                 Optional<User> optionalUser = userService.findByUsername(principal.getName());
@@ -47,7 +48,7 @@ public class OrderController {
                     user = optionalUser.get();
                 }
             }
-            
+
             // Si no hay usuario del Principal, intentar obtener del header Authorization
             if (user == null && authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7); // Remover "Bearer "
@@ -58,15 +59,15 @@ public class OrderController {
                     user = optionalUser.get();
                 }
             }
-            
+
             if (user == null) {
                 return ResponseEntity.status(401).build();
             }
-            
+
             if (user.getType() != TypeEnum.ADMIN) {
                 return ResponseEntity.status(403).build();
             }
-            
+
             List<Order> orders = orderService.getAllOrders();
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
@@ -88,7 +89,8 @@ public class OrderController {
         try {
             Order order = orderService.getOrderById(id);
 
-            if (!order.getUser().getId().equals(user.getId())) {
+            // Permitir a los ADMINS ver cualquier orden
+            if (user.getType() != TypeEnum.ADMIN && !order.getUser().getId().equals(user.getId())) {
                 return ResponseEntity.status(403).body("No tienes permiso para ver esta orden");
             }
 
@@ -120,18 +122,28 @@ public class OrderController {
         }
     }
 
+    /**
+     * Crea una nueva orden a partir de los datos enviados desde el frontend.
+     * @param orderRequest El payload que contiene la dirección y la lista de productos.
+     * @param principal El usuario autenticado.
+     * @return La orden creada.
+     */
     @PostMapping
-    public ResponseEntity<?> createOrder(@RequestBody Order orderRequest, Principal principal) {
+    public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequest orderRequest, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body("Usuario no autenticado");
+        }
+
         User user = userService.findByUsername(principal.getName())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con el nombre: " + principal.getName()));
 
         try {
-            Order createdOrder = orderService.createOrderFromCart(user, orderRequest.getAddress());
+            // Llamamos a un NUEVO método en el servicio que procesará el payload
+            Order createdOrder = orderService.createOrderFromPayload(user, orderRequest);
             return ResponseEntity.ok(createdOrder);
         } catch (RuntimeException e) {
+            // Devuelve un mensaje de error más específico
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
-
 }
