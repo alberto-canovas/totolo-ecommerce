@@ -20,13 +20,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.security.web.SecurityFilterChain;
 
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
@@ -51,27 +44,17 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // Aquí definimos la configuración CORS para Spring Security
-    @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200")); // tu frontend
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(withDefaults()) // Usar la configuración de CorsConfig
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/totolo/v1/login").permitAll()
+                        .requestMatchers("/totolo/v1/register").permitAll()
                         .requestMatchers("/totolo/v1/cart/**").authenticated()
+                        .requestMatchers("/totolo/v1/orders/all").hasRole("ADMIN") // Proteger endpoint de admin
+                        .requestMatchers("/totolo/v1/orders/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .httpBasic(withDefaults());

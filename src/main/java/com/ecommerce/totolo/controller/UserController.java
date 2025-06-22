@@ -159,4 +159,9 @@ public class UserController {
 
         return ResponseEntity.ok(new UserDto(user)); // ✅ DEVUELVE LOS DATOS DEL USUARIO
     }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("Backend funcionando correctamente");
+    }
 }
