@@ -15,6 +15,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/totolo/v1/orders")
+@CrossOrigin
 public class OrderController {
 
     @Autowired
@@ -33,6 +34,21 @@ public class OrderController {
         List<Order> orders = orderService.getOrdersByUser(user);
         return ResponseEntity.ok(orders);
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<Order>> getAllOrders(Principal principal) {
+        Optional<User> optionalUser = userService.findByUsername(principal.getName());
+        if (optionalUser.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        User user = optionalUser.get();
+        if (user.getType() != TypeEnum.ADMIN) {
+            return ResponseEntity.status(403).build();
+        }
+        List<Order> orders = orderService.getAllOrders();
+        return ResponseEntity.ok(orders);
+    }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getOrderById(@PathVariable Integer id, Principal principal) {

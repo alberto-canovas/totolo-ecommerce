@@ -1,6 +1,7 @@
 package com.ecommerce.totolo.controller;
 
 import com.ecommerce.totolo.Enum.TypeEnum;
+import com.ecommerce.totolo.dto.UserDto;
 import com.ecommerce.totolo.dto.UserLoginDto;
 import com.ecommerce.totolo.dto.UserRegisterDto;
 import com.ecommerce.totolo.model.User;
@@ -16,7 +17,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/totolo/v1")
-@CrossOrigin
+@CrossOrigin(origins = "http://localhost:4200")
 public class UserController {
 
     @Autowired
@@ -69,12 +70,10 @@ public class UserController {
         User targetUser = optionalTargetUser.get();
         User requester = optionalRequester.get();
 
-        // Permisos básicos
         if (!requester.getType().equals(TypeEnum.ADMIN) && !requester.getId().equals(targetUser.getId())) {
             return new ResponseEntity<>("No tienes permisos para modificar a otros usuarios", HttpStatus.FORBIDDEN);
         }
 
-        // Contraseña solo para el propio usuario
         if (user.getPassword() != null && !user.getPassword().isBlank()) {
             if (requester.getId().equals(targetUser.getId())) {
                 targetUser.setPassword(user.getPassword());
@@ -83,7 +82,6 @@ public class UserController {
             }
         }
 
-        // Validar username y email para no repetir
         if (user.getUsername() != null && !user.getUsername().equals(targetUser.getUsername())) {
             Optional<User> userWithSameUsername = userService.findByUsername(user.getUsername());
             if (userWithSameUsername.isPresent() && !userWithSameUsername.get().getId().equals(targetUser.getId())) {
@@ -100,7 +98,6 @@ public class UserController {
             targetUser.setEmail(user.getEmail());
         }
 
-        // Solo admin puede cambiar el type
         if (user.getType() != null) {
             if (requester.getType().equals(TypeEnum.ADMIN)) {
                 targetUser.setType(user.getType());
@@ -109,7 +106,6 @@ public class UserController {
             }
         }
 
-        // Campos editables
         if (user.getName() != null) targetUser.setName(user.getName());
         if (user.getLastname() != null) targetUser.setLastname(user.getLastname());
         if (user.getAddress() != null) targetUser.setAddress(user.getAddress());
@@ -149,7 +145,6 @@ public class UserController {
         return ResponseEntity.ok("Usuario registrado correctamente.");
     }
 
-    // Login simple sin Spring Security (solo ejemplo, NO recomendable para producción)
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody UserLoginDto loginDto) {
         Optional<User> userOpt = userService.findByUsername(loginDto.getUsername());
@@ -162,6 +157,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Contraseña incorrecta.");
         }
 
-        return ResponseEntity.ok("Login exitoso.");
+        return ResponseEntity.ok(new UserDto(user)); // ✅ DEVUELVE LOS DATOS DEL USUARIO
     }
 }
